@@ -1,26 +1,30 @@
 #!ruby -Ku
 
-#$encode = "tosjis"
-$encode = "toutf8"
-
 module Lattice
 
-  # lattice("data"=>[[1000,"abcde","12345"],[2000,"fghij","67890"]],
-  #          "col"=>[["id",10,""],["key",20,""],["value",20,""]])
-  def lattice(a,encode=$encode)
-    l = lambda{|i|"+#{i.map{|x,y|"-"*(y+2)}*"+"}+"}
-    b = lambda{|i|"| #{i.map{|x,y,z|(x||z).to_s.send($encode).ljust(y)}*" | "} |"}
-
-    line = l.call(a["col"])
-    data = a["data"].map{|i|b.call(i.zip(a["col"]).map{|x,y|[x,y[1],y[2]]})}
-    data = data - [line.gsub("+","|").gsub("-"," ")]
-
-    [line,b.call(a["col"]),line,data,line].flatten
+  def g_size(c,d)
+    d.push(c).transpose.map{|i|i.map(&:size).max}
   end
 
-  def resize_column(h,encode=$encode)
+  def g_line(s)
+    "+#{s.map{|i|"-"*(i+2)}*"+"}+"
+  end
+
+  def g_data(d,s,i)
+    d.map{|x|"| #{x.zip(s,i).map{|x,y,z|(x||z).to_s.ljust(y)}*" | "} |"}
+  end
+
+  def lattice(a)
+    line = g_line(a["size"])
+    col  = g_data([a["col"]],a["size"],a["ini"])
+    data = g_data(a["data"],a["size"],a["ini"])
+#    data = data - [line.gsub("+","|").gsub("-"," ")]
+    [line,col,line,data,line].flatten
+  end
+
+  def resize_column(h)
     col = []
-    h.flatten.each_slice(2){|i,j|col << [i,j.to_s.send(encode).size]}
+    h.flatten.each_slice(2){|i,j|col << [i,j.to_s.size]}
     col = col.group_by{|i|i[0]}.map{|j|j[1].max_by{|k|k[1]}}
     col = col.map{|x,y|[x,(y<x.size) ? x.size : y]}
   end
